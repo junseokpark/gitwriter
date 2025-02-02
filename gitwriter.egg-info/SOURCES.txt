@@ -1,0 +1,15 @@
+MANIFEST.in
+README.md
+pyproject.toml
+setup.py
+gitwriter/__init__.py
+gitwriter/cli.py
+gitwriter/git_utils.py
+gitwriter.egg-info/PKG-INFO
+gitwriter.egg-info/SOURCES.txt
+gitwriter.egg-info/dependency_links.txt
+gitwriter.egg-info/entry_points.txt
+gitwriter.egg-info/requires.txt
+gitwriter.egg-info/top_level.txt
+tests/__init__.py
+tests/test_git_utils.py

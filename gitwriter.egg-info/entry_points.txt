@@ -1,0 +1,2 @@
+[console_scripts]
+gitwriter = gitwriter.cli:main
