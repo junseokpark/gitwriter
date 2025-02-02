@@ -1,26 +1,11 @@
 import subprocess
-from openai import OpenAI, APIConnectionError, AuthenticationError
-import os
 import sys
+from gitwriter.environment import load_environment
+from openai import OpenAI, APIConnectionError, AuthenticationError
 
-def initialize_openai_client():
-    """Initialize OpenAI client with error handling."""
-    try:
-        openai_api_key = os.getenv("OPENAI_API_KEY")
-        if not openai_api_key:
-            raise EnvironmentError("OPENAI_API_KEY environment variable is not set.")
-        return OpenAI(api_key=openai_api_key)
-    except EnvironmentError as env_err:
-        print(f"Environment Error: {env_err}")
-        sys.exit(1)
-    except Exception as err:
-        print(f"Unexpected error initializing OpenAI client: {err}")
-        sys.exit(1)
-
-openai_client = initialize_openai_client()
 
 def fetch_staged_git_changes():
-    """Retrieve staged git changes."""
+    """Retrieve staged git changes using git diff."""
     try:
         git_process = subprocess.run(
             ["git", "diff", "--staged"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
@@ -35,20 +20,26 @@ def fetch_staged_git_changes():
         print(f"Unexpected error retrieving git changes: {err}")
         sys.exit(1)
 
+
 def create_commit_message_from_diff(diff_content):
-    """Generate commit message using OpenAI API based on git diff."""
+    """Generate commit message using either External or Local API based on environment configuration."""
+    env = load_environment()
+
+    if env['TYPE'].lower() == "external api":
+        return generate_external_commit_message(env, diff_content)
+    else:
+        return generate_local_commit_message(env, diff_content)
+
+
+def generate_external_commit_message(env, diff_content):
+    """Handles commit message generation via external API."""
     try:
-        api_response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+        client = OpenAI(api_key=env['API_KEY'])
+        api_response = client.chat.completions.create(
+            model=env['MODEL'],
             messages=[
-                {
-                    "role": "system",
-                    "content": "You are an assistant that generates helpful and concise git commit messages.",
-                },
-                {
-                    "role": "user",
-                    "content": f"Generate a Git commit message for the following changes, adhering to Git commit standards:\n\n{diff_content}",
-                },
+                {"role": "system", "content": "You are an assistant that generates concise git commit messages."},
+                {"role": "user", "content": f"Generate a Git commit message for the following changes:\n\n{diff_content}"},
             ],
             max_tokens=350,
             temperature=0.5,
@@ -63,3 +54,11 @@ def create_commit_message_from_diff(diff_content):
     except Exception as err:
         print(f"Unexpected error communicating with OpenAI API: {err}")
         sys.exit(1)
+
+
+def generate_local_commit_message(env, diff_content):
+    """Placeholder for local API commit message generation logic."""
+    # Implement your logic to interact with local API (e.g., llama3, deepseek1)
+    print(f"Local API model {env['MODEL']} selected at {env['API_ADDRESS']}.")
+    # For now, returning a mock response
+    return f"Generated commit message using local API model {env['MODEL']} (mock)."
